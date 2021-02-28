@@ -14,36 +14,12 @@ import os
 #How to develop a convolutional neural network for photo classification from scratch and improve model performance.
 #How to develop a model for photo classification using transfer learning.
 
-A_path = './Dataset/GestureA/0 degree/'
-A_filenames = glob.glob(A_path + '*.csv')
-B_path = './Dataset/GestureC/0 degree/'
-B_filenames = glob.glob(B_path + '*.csv')
+
 X = []
 Y = []
-if(B_filenames[0].startswith('B')):
-    print('hello')
+
 training_path='./Dataset/train/'
 training_filename = glob.glob(training_path + '*.csv')
-
-# for files in training_filename:
-    
-#     #print(os.path.basename(files))
-#     data = pd.read_csv(files)
-    
-#     ii = data.iloc[:550,:138]
-#     qq = data.iloc[:550,138:276]
-#     complexqq = qq.astype(float)*1j
-#     iq = ii.add(complexqq, fill_value=0)
-#     X.append(abs(iq))
-#     if(os.path.basename(files).startswith('A')):
-#         Y.append(0.0)
-#     else:
-#         Y.append(1.0)
-    
-# X_array = np.array(X)
-# dataset_X = torch.FloatTensor(X_array)
-# dataset_X = dataset_X.unsqueeze(1) #so that the format is accepted for eg. [50, 600, 276] --> [50, 1, 600, 276]
-# dataset_Y = torch.tensor(Y,dtype=torch.long)
         
 
 
