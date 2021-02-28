@@ -7,15 +7,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
+import pdb
 
-x_path = './Dataset/GestureA/0 degree/'
-x_filenames = glob.glob(x_path + '*.csv')
+
+
+A_path = './Dataset/GestureA/0 degree/'
+A_filenames = glob.glob(A_path + '*.csv')
+B_path = './Dataset/GestureB/0 degree/'
+B_filenames = glob.glob(B_path + '*.csv')
 X = []
 Y = []
 
 class Dataset_Interpreter(Dataset):
     def __init__(self,file_names, transforms=None):
         self.file_names = file_names
+        #self.label = label
         self.transforms = transforms
 
     def __len__(self):
@@ -27,18 +33,21 @@ class Dataset_Interpreter(Dataset):
         qq = data.iloc[:600,138:276]
         complexqq = qq*1j
         iq = ii.add(complexqq, fill_value=0)
-        X = abs(iq)
+        X =abs(iq)
         Y = 0
+        
         X_array = np.array(X)
+       
         
         dataset_X = torch.FloatTensor(X_array)
         dataset_X = dataset_X.unsqueeze(0) #so that the format is accepted for eg. [50, 600, 276] --> [50, 1, 600, 276]
         dataset_Y = torch.tensor(Y,dtype=torch.long)
         
-            
+        #pdb.set_trace()    
         return dataset_X,dataset_Y
 
-train_data = Dataset_Interpreter(file_names=x_filenames, transforms=None)
+train_data = Dataset_Interpreter(file_names=B_filenames ,transforms=None)
+train_data.class_to_idx
 BATCH_SIZE = 5
 train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
 
