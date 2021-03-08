@@ -9,6 +9,7 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 import pdb
 import os
+import torchvision
 
 #How to load and prepare photos of dogs and cats for modeling.
 #How to develop a convolutional neural network for photo classification from scratch and improve model performance.
@@ -33,14 +34,16 @@ class Dataset_Interpreter(Dataset):
 
     def __getitem__(self,idx):
         data = pd.read_csv(self.file_names[idx])
-        ii = data.iloc[:550,:138]
-        qq = data.iloc[:550,138:276]
+        ii = data.iloc[:1100,:138]
+        qq = data.iloc[:1100,138:276]
         complexqq = qq.astype(float)*1j
         iq = ii.add(complexqq, fill_value=0)
         X =abs(iq)
         Y= 1
         if(os.path.basename(self.file_names[idx]).startswith('A')):
             Y = 0
+        #elif(os.path.basename(self.file_names[idx]).startswith('B')):
+        #    Y = 1
     
         X_array = np.array(X)
         
@@ -48,12 +51,18 @@ class Dataset_Interpreter(Dataset):
         dataset_X = dataset_X.unsqueeze(0) #so that the format is accepted for eg. [50, 600, 276] --> [50, 1, 600, 276]
         dataset_Y = torch.tensor(Y,dtype=torch.long)
         
-        #pdb.set_trace()    
+        #pdb.set_trace() 
+        if self.transforms is not None:
+            dataset_X = self.transforms(dataset_X)   
         return dataset_X,dataset_Y
 
+mytransform = torchvision.transforms.RandomAffine(degrees= 10, translate=(0.25, 0.5), 
+scale=(1.2, 2.0), shear=0.1)
 train_data = Dataset_Interpreter(file_names=training_filename ,transforms=None)
 BATCH_SIZE = 10
 train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
+print(len(train_data))
+
 
 
 class Block(nn.Module):
@@ -181,7 +190,7 @@ def ResNet152(img_channels=3, num_classes=1000):
 
 #model = Net()
 #print(model)
-model = ResNet18(img_channels=1, num_classes=2)
+model = ResNet50(img_channels=1, num_classes=2)
 # defining the optimizer
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 # defining the loss function
@@ -191,26 +200,33 @@ criterion = nn.CrossEntropyLoss()
 train_losses = []
 train_counter = []
 
-def train(epoch,criterion):
-  model.train()
-  for batch_idx, (data, target) in enumerate(train_iterator):
-    optimizer.zero_grad()
-    output = model(data)
-    #target = target.unsqueeze(1)
-    #target = target.type_as(output)
-    loss = criterion(output, target)
-    loss.backward()
-    optimizer.step()
+
+def train(epoch):
+    total=0
+    correct=0
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_iterator):
+        optimizer.zero_grad()
+        output = model(data)
+        loss = criterion(output, target)
+
+        #accuracy
+        _, predicted = torch.max(output.data, 1)
+        total += target.size(0)
+        correct += (predicted == target).sum().item()
+
+        loss.backward()
+        optimizer.step()
     
-    print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_iterator.dataset),100. * batch_idx / len(train_iterator), loss.item()))
-    train_losses.append(loss.item())
-    train_counter.append((batch_idx*64) + ((epoch-1)*len(train_iterator.dataset)))
+    print('Train Epoch: {} \tLoss: {:.3f}| Acc:{:.3f}'.format(epoch, loss.item(),correct / total))
+    #train_losses.append(loss.item())
+    #train_counter.append((batch_idx*64) + ((epoch-1)*len(train_iterator.dataset)))
 
 
 # defining the number of epochs
-n_epochs = 3
+n_epochs = 5
 
 
 # training the model
 for epoch in range(1, n_epochs + 1):
-  train(epoch,criterion)
+  train(epoch)
