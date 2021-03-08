@@ -16,8 +16,10 @@ import torchvision
 #How to develop a model for photo classification using transfer learning.
 
 
+
 X = []
 Y = []
+torch.cuda.empty_cache()
 
 training_path='./Dataset/train/'
 training_filename = glob.glob(training_path + '*.csv')
@@ -59,7 +61,7 @@ class Dataset_Interpreter(Dataset):
 mytransform = torchvision.transforms.RandomAffine(degrees= 10, translate=(0.25, 0.5), 
 scale=(1.2, 2.0), shear=0.1)
 train_data = Dataset_Interpreter(file_names=training_filename ,transforms=None)
-BATCH_SIZE = 10
+BATCH_SIZE = 5
 train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
 print(len(train_data))
 
@@ -188,14 +190,14 @@ def ResNet152(img_channels=3, num_classes=1000):
     return ResNet(152, Block, img_channels, num_classes)
 
 
-#model = Net()
-#print(model)
-model = ResNet50(img_channels=1, num_classes=2)
-# defining the optimizer
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-# defining the loss function
-criterion = nn.CrossEntropyLoss()
 
+model = ResNet18(img_channels=1, num_classes=2)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
+criterion = nn.CrossEntropyLoss()
+if torch.cuda.is_available():
+    print("cuda")
+    model = model.cuda()
+    criterion = criterion.cuda()
 
 train_losses = []
 train_counter = []
@@ -206,6 +208,11 @@ def train(epoch):
     correct=0
     model.train()
     for batch_idx, (data, target) in enumerate(train_iterator):
+
+        if torch.cuda.is_available():
+            data=data.cuda()
+            target=target.cuda()
+
         optimizer.zero_grad()
         output = model(data)
         loss = criterion(output, target)
@@ -218,13 +225,13 @@ def train(epoch):
         loss.backward()
         optimizer.step()
     
-    print('Train Epoch: {} \tLoss: {:.3f}| Acc:{:.3f}'.format(epoch, loss.item(),correct / total))
+    print('Train Epoch: {}  Loss: {:.3f}| Acc:{:.3f}'.format(epoch, loss.item(),correct / total))
     #train_losses.append(loss.item())
     #train_counter.append((batch_idx*64) + ((epoch-1)*len(train_iterator.dataset)))
 
 
 # defining the number of epochs
-n_epochs = 5
+n_epochs = 50
 
 
 # training the model
