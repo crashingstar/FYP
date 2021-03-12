@@ -36,16 +36,18 @@ class Dataset_Interpreter(Dataset):
 
     def __getitem__(self,idx):
         data = pd.read_csv(self.file_names[idx])
-        ii = data.iloc[:1100,:138]
-        qq = data.iloc[:1100,138:276]
+        ii = data.iloc[250:1100,:138]
+        qq = data.iloc[250:1100,138:276]
         complexqq = qq.astype(float)*1j
         iq = ii.add(complexqq, fill_value=0)
         X =abs(iq)
-        Y= 1
+        Y= 3
         if(os.path.basename(self.file_names[idx]).startswith('A')):
             Y = 0
-        #elif(os.path.basename(self.file_names[idx]).startswith('B')):
-        #    Y = 1
+        elif(os.path.basename(self.file_names[idx]).startswith('B')):
+            Y = 1
+        elif(os.path.basename(self.file_names[idx]).startswith('')):
+            Y = 2
     
         X_array = np.array(X)
         
@@ -61,7 +63,7 @@ class Dataset_Interpreter(Dataset):
 mytransform = torchvision.transforms.RandomAffine(degrees= 10, translate=(0.25, 0.5), 
 scale=(1.2, 2.0), shear=0.1)
 train_data = Dataset_Interpreter(file_names=training_filename ,transforms=None)
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
 print(len(train_data))
 
@@ -191,7 +193,7 @@ def ResNet152(img_channels=3, num_classes=1000):
 
 
 
-model = ResNet18(img_channels=1, num_classes=2)
+model = ResNet18(img_channels=1, num_classes=4)
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 criterion = nn.CrossEntropyLoss()
 if torch.cuda.is_available():
