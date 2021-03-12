@@ -10,6 +10,7 @@ from torch.utils.data import Dataset, DataLoader
 import pdb
 import os
 import torchvision
+import time
 
 #How to load and prepare photos of dogs and cats for modeling.
 #How to develop a convolutional neural network for photo classification from scratch and improve model performance.
@@ -23,7 +24,8 @@ torch.cuda.empty_cache()
 
 training_path='./Dataset/train/'
 training_filename = glob.glob(training_path + '*.csv')
-        
+test_path='./Dataset/test/'
+test_filename = glob.glob(test_path + '*.csv')        
 
 
 class Dataset_Interpreter(Dataset):
@@ -63,9 +65,12 @@ class Dataset_Interpreter(Dataset):
 mytransform = torchvision.transforms.RandomAffine(degrees= 10, translate=(0.25, 0.5), 
 scale=(1.2, 2.0), shear=0.1)
 train_data = Dataset_Interpreter(file_names=training_filename ,transforms=None)
+test_data = Dataset_Interpreter(file_names=test_filename ,transforms=None)
 BATCH_SIZE = 10
 train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
+test_iterator = DataLoader(test_data, shuffle=True, batch_size= 20)
 print(len(train_data))
+print(len(test_data))
 
 
 
@@ -201,8 +206,8 @@ if torch.cuda.is_available():
     model = model.cuda()
     criterion = criterion.cuda()
 
-train_losses = []
-train_counter = []
+#train_losses = []
+#train_counter = []
 
 
 def train(epoch):
@@ -231,11 +236,30 @@ def train(epoch):
     #train_losses.append(loss.item())
     #train_counter.append((batch_idx*64) + ((epoch-1)*len(train_iterator.dataset)))
 
+def test():
+    model.eval()
+    total = 0
+    correct = 0
+    with torch.no_grad():
+        for data, target in test_iterator:
+            if torch.cuda.is_available():
+                data=data.cuda()
+                target=target.cuda()
 
-# defining the number of epochs
+            output = model(data)
+            loss = criterion(output, target)
+            _, predicted = torch.max(output.data, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
+    print('\nTest set: Avg. loss: {:.3f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+    loss, correct, len(test_iterator.dataset),
+    100. * correct / len(test_iterator.dataset)))
+
+#test() #ramdonly allocate test
 n_epochs = 50
-
-
 # training the model
+t0 = time.time()
 for epoch in range(1, n_epochs + 1):
-  train(epoch)
+    train(epoch)
+test()
+print('{:.4f} minutes'.format((time.time()-t0)/60))
