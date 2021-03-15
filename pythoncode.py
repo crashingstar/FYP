@@ -26,7 +26,7 @@ training_path='./Dataset/train/'
 training_filename = glob.glob(training_path + '*.csv')
 test_path='./Dataset/test/'
 test_filename = glob.glob(test_path + '*.csv')        
-
+torch.manual_seed(42)
 
 class Dataset_Interpreter(Dataset):
     def __init__(self,file_names, transforms=None):
@@ -65,12 +65,13 @@ class Dataset_Interpreter(Dataset):
 mytransform = torchvision.transforms.RandomAffine(degrees= 10, translate=(0.25, 0.5), 
 scale=(1.2, 2.0), shear=0.1)
 train_data = Dataset_Interpreter(file_names=training_filename ,transforms=None)
-test_data = Dataset_Interpreter(file_names=test_filename ,transforms=None)
+#test_data = Dataset_Interpreter(file_names=test_filename ,transforms=None)
+train_ds, test_data = torch.utils.data.random_split(train_data, (320, 80))
 BATCH_SIZE = 10
-train_iterator = DataLoader(train_data, shuffle=True, batch_size= BATCH_SIZE)
-test_iterator = DataLoader(test_data, shuffle=True, batch_size= 20)
+train_iterator = DataLoader(train_ds, shuffle=True, batch_size= BATCH_SIZE)
+test_iterator = DataLoader(test_data, shuffle=False, batch_size= 10)
 print(len(train_data))
-print(len(test_data))
+print(len(train_ds.indices), len(test_data.indices))
 
 
 
@@ -198,8 +199,8 @@ def ResNet152(img_channels=3, num_classes=1000):
 
 
 
-model = ResNet18(img_channels=1, num_classes=4)
-optimizer = optim.Adam(model.parameters(), lr=0.01)
+model = ResNet50(img_channels=1, num_classes=4)
+optimizer = optim.Adam(model.parameters(), lr=0.0005)
 criterion = nn.CrossEntropyLoss()
 if torch.cuda.is_available():
     print("cuda")
@@ -251,15 +252,16 @@ def test():
             _, predicted = torch.max(output.data, 1)
             total += target.size(0)
             correct += (predicted == target).sum().item()
-    print('\nTest set: Avg. loss: {:.3f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-    loss, correct, len(test_iterator.dataset),
-    100. * correct / len(test_iterator.dataset)))
+    print('Test : Loss: {:.3f}, Acc:{:.3f}\n'.format(
+    loss, correct / len(test_iterator.dataset)))
 
 #test() #ramdonly allocate test
-n_epochs = 50
+n_epochs = 20
 # training the model
-t0 = time.time()
+
 for epoch in range(1, n_epochs + 1):
+    #t0 = time.time()
     train(epoch)
-test()
-print('{:.4f} minutes'.format((time.time()-t0)/60))
+    test()
+    #print('{:.4f} seconds'.format((time.time()-t0)))
+#
